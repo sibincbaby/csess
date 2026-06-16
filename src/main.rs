@@ -1,4 +1,5 @@
 mod discovery;
+mod filter;
 mod session;
 
 fn main() {
