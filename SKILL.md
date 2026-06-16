@@ -1,5 +1,5 @@
 ---
-name: claude-session-lookup
+name: csess
 description: Use when you need to find Claude Code sessions for a folder — list session names, last-active times, message counts, and paths. Fast; prefer --json for parsing.
 ---
 
@@ -30,4 +30,5 @@ Each item: `session_id`, `short`, `name`, `cwd`, `last_active`, `created`,
 Sorted newest-first by default. Use `--sort` and `-n/--limit` to refine.
 
 ## Install
-`cargo install --git https://github.com/sibincbaby/csess`
+1. Binary: `cargo install --git https://github.com/sibincbaby/csess`
+2. This skill: copy this file to `~/.claude/skills/csess/SKILL.md` so `/csess` is available.

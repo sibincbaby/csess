@@ -61,9 +61,23 @@ csess --json               # machine-readable output (for scripts / AI)
 `session_id`, `short`, `name`, `cwd`, `last_active` (RFC3339), `created`,
 `message_count`, `git_branch`, `version`, `size_bytes`, `file_path`.
 
-## For AI agents
-See [`SKILL.md`](./SKILL.md) — guidance for Claude Code and other agents on when
-and how to call `csess` (prefer `--json`).
+## For AI agents (Claude Code)
+
+Two steps — install the binary, then install the skill (a root `SKILL.md` does
+**not** auto-register; it must live under `~/.claude/skills/`):
+
+```bash
+# 1. binary
+cargo install --git https://github.com/sibincbaby/csess
+
+# 2. skill → enables /csess in Claude Code
+mkdir -p ~/.claude/skills/csess
+curl -fsSL https://raw.githubusercontent.com/sibincbaby/csess/main/SKILL.md \
+  -o ~/.claude/skills/csess/SKILL.md
+```
+
+See [`SKILL.md`](./SKILL.md) for when and how an agent should call `csess`
+(prefer `--json`).
 
 ## License
 MIT © Sibin C Baby
