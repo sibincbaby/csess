@@ -29,11 +29,11 @@ pub fn parse_when(s: &str, now: DateTime<Utc>) -> Result<DateTime<Utc>> {
     anyhow::bail!("invalid time value '{s}' (use e.g. 30m, 24h, 7d, or 2026-06-01)")
 }
 
+/// A (since, until) time-bound pair.
+pub type Bounds = (Option<DateTime<Utc>>, Option<DateTime<Utc>>);
+
 /// Named period presets -> (since, until) bounds.
-pub fn period_bounds(
-    p: &str,
-    now: DateTime<Utc>,
-) -> Result<(Option<DateTime<Utc>>, Option<DateTime<Utc>>)> {
+pub fn period_bounds(p: &str, now: DateTime<Utc>) -> Result<Bounds> {
     let midnight =
         |dt: DateTime<Utc>| Utc.from_utc_datetime(&dt.date_naive().and_hms_opt(0, 0, 0).unwrap());
     match p {
@@ -79,18 +79,18 @@ pub fn search(sessions: Vec<Session>, term: &str) -> Vec<Session> {
             matcher.fuzzy_match(&hay, term).map(|score| (score, s))
         })
         .collect();
-    scored.sort_by(|a, b| b.0.cmp(&a.0));
+    scored.sort_by_key(|x| std::cmp::Reverse(x.0));
     scored.into_iter().map(|(_, s)| s).collect()
 }
 
 /// Sort in place by key. Defaults: time/size/messages descending, name ascending.
 pub fn sort_sessions(sessions: &mut [Session], key: SortKey, reverse: bool) {
     match key {
-        SortKey::Active => sessions.sort_by(|a, b| b.last_active.cmp(&a.last_active)),
-        SortKey::Created => sessions.sort_by(|a, b| b.created.cmp(&a.created)),
-        SortKey::Name => sessions.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase())),
-        SortKey::Messages => sessions.sort_by(|a, b| b.message_count.cmp(&a.message_count)),
-        SortKey::Size => sessions.sort_by(|a, b| b.size_bytes.cmp(&a.size_bytes)),
+        SortKey::Active => sessions.sort_by_key(|s| std::cmp::Reverse(s.last_active)),
+        SortKey::Created => sessions.sort_by_key(|s| std::cmp::Reverse(s.created)),
+        SortKey::Name => sessions.sort_by_key(|s| s.name.to_lowercase()),
+        SortKey::Messages => sessions.sort_by_key(|s| std::cmp::Reverse(s.message_count)),
+        SortKey::Size => sessions.sort_by_key(|s| std::cmp::Reverse(s.size_bytes)),
     }
     if reverse {
         sessions.reverse();

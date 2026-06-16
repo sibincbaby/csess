@@ -175,7 +175,9 @@ mod tests {
     #[test]
     fn parse_session_extracts_name_and_cwd() {
         let dir = tempfile::tempdir().unwrap();
-        let p = dir.path().join("11111111-2222-3333-4444-555555555555.jsonl");
+        let p = dir
+            .path()
+            .join("11111111-2222-3333-4444-555555555555.jsonl");
         fs::write(
             &p,
             concat!(
@@ -195,7 +197,9 @@ mod tests {
     #[test]
     fn parse_session_prefers_summary() {
         let dir = tempfile::tempdir().unwrap();
-        let p = dir.path().join("aaaaaaaa-0000-0000-0000-000000000000.jsonl");
+        let p = dir
+            .path()
+            .join("aaaaaaaa-0000-0000-0000-000000000000.jsonl");
         fs::write(
             &p,
             concat!(
@@ -211,7 +215,9 @@ mod tests {
     #[test]
     fn parse_session_skips_garbage_and_empty() {
         let dir = tempfile::tempdir().unwrap();
-        let p = dir.path().join("bbbbbbbb-0000-0000-0000-000000000000.jsonl");
+        let p = dir
+            .path()
+            .join("bbbbbbbb-0000-0000-0000-000000000000.jsonl");
         fs::write(&p, "not json\n\n{ broken\n").unwrap();
         assert!(parse_session(&p).unwrap().is_none());
     }

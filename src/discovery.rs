@@ -6,7 +6,8 @@ pub fn projects_root(override_dir: Option<&str>) -> Result<PathBuf> {
     if let Some(d) = override_dir {
         return Ok(PathBuf::from(d));
     }
-    let home = dirs::home_dir().ok_or_else(|| anyhow::anyhow!("cannot determine home directory"))?;
+    let home =
+        dirs::home_dir().ok_or_else(|| anyhow::anyhow!("cannot determine home directory"))?;
     Ok(home.join(".claude").join("projects"))
 }
 

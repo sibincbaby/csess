@@ -13,7 +13,14 @@ pub fn render_json(sessions: &[Session]) -> Result<String> {
 pub fn render_table(sessions: &[Session], now: DateTime<Utc>) -> String {
     let mut table = Table::new();
     table.load_preset(UTF8_BORDERS_ONLY);
-    table.set_header(vec!["SHORT", "NAME", "LAST ACTIVE", "MSGS", "BRANCH", "PATH"]);
+    table.set_header(vec![
+        "SHORT",
+        "NAME",
+        "LAST ACTIVE",
+        "MSGS",
+        "BRANCH",
+        "PATH",
+    ]);
     for s in sessions {
         let name = truncate(&s.name.replace('\n', " "), 50);
         table.add_row(vec![
