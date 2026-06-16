@@ -4,58 +4,58 @@
     {
       "id": 0,
       "subject": "Task 0: Project scaffold",
-      "status": "pending",
+      "status": "completed",
       "description": "Cargo.toml with deps (clap/serde/serde_json/chrono+serde/rayon/comfy-table/fuzzy-matcher/dirs/anyhow; dev assert_cmd/predicates/tempfile), minimal main.rs, rustfmt.toml.\n\n```json:metadata\n{\"files\": [\"Cargo.toml\", \"src/main.rs\", \"rustfmt.toml\"], \"verifyCommand\": \"cargo build\", \"acceptanceCriteria\": [\"cargo build succeeds\"], \"modelTier\": \"mechanical\"}\n```"
     },
     {
       "id": 1,
       "subject": "Task 1: Discovery and path matching",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [0],
       "description": "src/discovery.rs: projects_root, resolve_target, normalize, encode_path, dir_matches (loose), path_under (strict). Unit tests incl. dashed sibling.\n\n```json:metadata\n{\"files\": [\"src/discovery.rs\", \"src/main.rs\"], \"verifyCommand\": \"cargo test discovery\", \"acceptanceCriteria\": [\"encode_path\", \"dir_matches\", \"path_under excludes dashed sibling\"], \"modelTier\": \"standard\"}\n```"
     },
     {
       "id": 2,
       "subject": "Task 2: Session parsing",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [1],
       "description": "src/session.rs: Session struct + parse_session (name via summary/first prompt, cwd, timestamps, branch, count). Unit tests.\n\n```json:metadata\n{\"files\": [\"src/session.rs\", \"src/main.rs\"], \"verifyCommand\": \"cargo test session\", \"acceptanceCriteria\": [\"name+cwd\", \"summary precedence\", \"skip garbage\"], \"modelTier\": \"standard\"}\n```"
     },
     {
       "id": 3,
       "subject": "Task 3: Filtering, fuzzy search, sorting",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [1],
       "description": "src/filter.rs: SortKey, parse_when, period_bounds, time_filter, search (SkimMatcherV2), sort_sessions. Unit tests.\n\n```json:metadata\n{\"files\": [\"src/filter.rs\", \"src/main.rs\"], \"verifyCommand\": \"cargo test filter\", \"acceptanceCriteria\": [\"parse_when\", \"period_bounds\", \"fuzzy search\", \"sort+reverse\"], \"modelTier\": \"standard\"}\n```"
     },
     {
       "id": 4,
       "subject": "Task 4: Output rendering (table + JSON)",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [3],
       "description": "src/output.rs: render_json, render_table (comfy-table), truncate, relative_time. Unit tests.\n\n```json:metadata\n{\"files\": [\"src/output.rs\", \"src/main.rs\"], \"verifyCommand\": \"cargo test output\", \"acceptanceCriteria\": [\"json array\", \"table footer\", \"helpers\"], \"modelTier\": \"standard\"}\n```"
     },
     {
       "id": 5,
       "subject": "Task 5: CLI and orchestration + integration tests",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [3],
       "description": "src/cli.rs Cli struct; main.rs run() full pipeline; tests/cli.rs (assert_cmd) incl. dashed-sibling exclusion + exit code 2.\n\n```json:metadata\n{\"files\": [\"src/cli.rs\", \"src/main.rs\", \"tests/cli.rs\"], \"verifyCommand\": \"cargo test && cargo clippy --all-targets -- -D warnings && cargo fmt --check\", \"acceptanceCriteria\": [\"table\", \"json\", \"dashed sibling excluded\", \"exit 2\"], \"modelTier\": \"standard\"}\n```"
     },
     {
       "id": 6,
       "subject": "Task 6: Distribution — docs, license, changelog, CI/release",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [2, 4, 5],
       "description": "README.md, SKILL.md, LICENSE (MIT), CHANGELOG.md, install.sh, .github/workflows/ci.yml + release.yml.\n\n```json:metadata\n{\"files\": [\"README.md\", \"SKILL.md\", \"LICENSE\", \"CHANGELOG.md\", \"install.sh\", \".github/workflows/ci.yml\", \".github/workflows/release.yml\"], \"verifyCommand\": \"cargo build --release && ls .github/workflows\", \"acceptanceCriteria\": [\"README\", \"SKILL frontmatter\", \"CI+release\", \"MIT+changelog\"], \"modelTier\": \"mechanical\"}\n```"
     },
     {
       "id": 7,
       "subject": "Task 7: First release (manual, requires user)",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [6],
       "description": "Publish under sibincbaby (HTTPS) and tag v0.1.0. Run only on explicit user go-ahead.\n\n```json:metadata\n{\"files\": [], \"verifyCommand\": \"gh release view v0.1.0\", \"acceptanceCriteria\": [\"repo pushed\", \"v0.1.0 tagged\", \"release tarballs\"], \"modelTier\": \"mechanical\"}\n```"
     }
   ],
-  "lastUpdated": "2026-06-16"
+  "lastUpdated": "2026-06-16T02:50:00Z"
 }
