@@ -54,7 +54,7 @@ Remote is the **personal** account: `git@github-personal:sibincbaby/csess.git`.
 
 ### Publishing to crates.io
 
-The GitHub Release only attaches prebuilt binaries — it does **not** push to crates.io. Publishing is a separate manual step (`cargo publish`), not wired into CI. The `Cargo.toml` already carries the required metadata (`description`, `repository`, `homepage`, `license`, `readme`, `keywords`, `categories`) and a `LICENSE` file exists. To publish a new version after bumping:
+As of the `publish` job in `release.yml`, pushing a `v*` tag now publishes to crates.io automatically (needs the repo secret `CARGO_REGISTRY_TOKEN`). The manual `cargo publish` below is the fallback / first-time path. The `Cargo.toml` already carries the required metadata (`description`, `repository`, `homepage`, `license`, `readme`, `keywords`, `categories`) and a `LICENSE` file exists. To publish a new version after bumping:
 
 ```bash
 cargo publish --dry-run   # verify packaging
