@@ -52,6 +52,17 @@ Releases are built by `.github/workflows/release.yml`, triggered **only by pushi
 
 Remote is the **personal** account: `git@github-personal:sibincbaby/csess.git`.
 
+### Publishing to crates.io
+
+The GitHub Release only attaches prebuilt binaries — it does **not** push to crates.io. Publishing is a separate manual step (`cargo publish`), not wired into CI. The `Cargo.toml` already carries the required metadata (`description`, `repository`, `homepage`, `license`, `readme`, `keywords`, `categories`) and a `LICENSE` file exists. To publish a new version after bumping:
+
+```bash
+cargo publish --dry-run   # verify packaging
+cargo publish             # uploads to crates.io (irreversible — only yankable, never deletable)
+```
+
+Credentials live in `~/.cargo/credentials.toml` (set once via `cargo login`). Published as `csess` → users install with `cargo install csess`.
+
 ## Architecture
 
 The whole pipeline is the numbered steps in `run()` in `src/main.rs`; each module owns one stage.

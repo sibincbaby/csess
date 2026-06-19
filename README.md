@@ -13,6 +13,11 @@ folder names containing dashes.
 
 ## Install
 
+### From crates.io
+```bash
+cargo install csess
+```
+
 ### From source (Cargo)
 ```bash
 cargo install --git https://github.com/sibincbaby/csess
