@@ -38,6 +38,7 @@ pub fn parse_session(path: &Path) -> Result<Option<Session>> {
     let mut cwd = String::new();
     let mut git_branch = String::new();
     let mut version = String::new();
+    let mut ai_title: Option<String> = None;
     let mut summary: Option<String> = None;
     let mut first_prompt: Option<String> = None;
     let mut created: Option<DateTime<Utc>> = None;
@@ -82,6 +83,13 @@ pub fn parse_session(path: &Path) -> Result<Option<Session>> {
         }
 
         match typ {
+            "ai-title" => {
+                if let Some(s) = v.get("aiTitle").and_then(|s| s.as_str()) {
+                    if !s.trim().is_empty() {
+                        ai_title = Some(s.trim().to_string());
+                    }
+                }
+            }
             "summary" => {
                 if let Some(s) = v.get("summary").and_then(|s| s.as_str()) {
                     if !s.trim().is_empty() {
@@ -111,11 +119,17 @@ pub fn parse_session(path: &Path) -> Result<Option<Session>> {
         }
     }
 
-    if cwd.is_empty() && summary.is_none() && first_prompt.is_none() && message_count == 0 {
+    if cwd.is_empty()
+        && ai_title.is_none()
+        && summary.is_none()
+        && first_prompt.is_none()
+        && message_count == 0
+    {
         return Ok(None);
     }
 
-    let name = summary
+    let name = ai_title
+        .or(summary)
         .or(first_prompt)
         .unwrap_or_else(|| "(no name)".to_string());
     let short = session_id.chars().take(8).collect();
@@ -165,7 +179,9 @@ fn is_meta_text(t: &str) -> bool {
     t.starts_with("<command-")
         || t.starts_with("<local-command")
         || t.starts_with("<bash-")
+        || t.starts_with("<ide_")
         || t.starts_with("Caveat:")
+        || t.starts_with("Base directory for this skill:")
 }
 
 #[cfg(test)]
@@ -210,6 +226,25 @@ mod tests {
         .unwrap();
         let s = parse_session(&p).unwrap().unwrap();
         assert_eq!(s.name, "Refactor auth");
+    }
+
+    #[test]
+    fn parse_session_prefers_ai_title_over_summary_and_skips_skill_meta() {
+        let dir = tempfile::tempdir().unwrap();
+        let p = dir
+            .path()
+            .join("cccccccc-0000-0000-0000-000000000000.jsonl");
+        fs::write(
+            &p,
+            concat!(
+                "{\"type\":\"user\",\"cwd\":\"/x\",\"message\":{\"role\":\"user\",\"content\":\"Base directory for this skill: /home/x\"}}\n",
+                "{\"type\":\"summary\",\"summary\":\"some summary\"}\n",
+                "{\"type\":\"ai-title\",\"aiTitle\":\"Review LWR 127047\"}\n",
+            ),
+        )
+        .unwrap();
+        let s = parse_session(&p).unwrap().unwrap();
+        assert_eq!(s.name, "Review LWR 127047");
     }
 
     #[test]

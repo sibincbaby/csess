@@ -29,6 +29,29 @@ cargo test
 
 Treat clippy warnings as errors — fix them, don't silence them with `#[allow(...)]` unless there's a documented reason. Don't leave `dbg!`, stray `println!`/`eprintln!` (outside intended output paths), or commented-out code behind. "It compiles" is not done; the three checks above are.
 
+## Updating the user's installed binary
+
+The user runs `csess` from `~/.cargo/bin/csess`, which is a **separate copy** from `target/`. Rebuilding (`cargo build`) does NOT update it — after a fix, the user keeps seeing old behavior until reinstalled. To update the binary they actually run:
+
+```bash
+cargo install --path . --force
+```
+
+## Cutting a release
+
+Releases are built by `.github/workflows/release.yml`, triggered **only by pushing a `v*` tag** (musl + gnu binaries attached to a GitHub Release). There is no other release path — building locally does not publish anything. To cut one:
+
+1. Bump `version` in `Cargo.toml` (semver) and add a matching `## [x.y.z] - YYYY-MM-DD` section to `CHANGELOG.md`.
+2. Commit (`git commit -am "release: vX.Y.Z"`), ensure `main` is up to date, push.
+3. Tag and push the tag — this is what triggers the build:
+   ```bash
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
+   ```
+4. Verify the run in GitHub Actions and the resulting Release.
+
+Remote is the **personal** account: `git@github-personal:sibincbaby/csess.git`.
+
 ## Architecture
 
 The whole pipeline is the numbered steps in `run()` in `src/main.rs`; each module owns one stage.
