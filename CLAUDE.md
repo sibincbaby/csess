@@ -78,7 +78,9 @@ Never collapse these into one step or "fix" the over-inclusion in phase 1 — th
 
 **Filtering/sorting (`filter.rs`):** Time bounds resolve as period preset first, then explicit `--since`/`--until` override (`parse_when` accepts `30m`/`24h`/`7d` or `YYYY-MM-DD`). Search is fuzzy (skim matcher) over `name + cwd`, returning score-ranked results; when `--search` is active and no explicit `--sort` is given, score order is preserved instead of re-sorting.
 
-**Output (`output.rs`):** `--json` emits the full `Session` structs (serde); default is a `comfy-table` view with relative times and a trailing count.
+**Output (`output.rs`):** `--json` emits the full `Session` structs (serde); default is a `comfy-table` view with relative times and a trailing count. `--show` renders one session's transcript (human or `--json`) via `collect_messages`, which `-n` tails to the last N and `--before <uuid>` pages backwards (drop that message and everything after it, then apply `-n`) — a drift-free scroll-up cursor for lazy-loading chat UIs.
+
+**Synthetic resume entries:** Claude Code writes its own placeholder turns to the `.jsonl` on non-interactive resume — an `isMeta:true` "Continue from where you left off." user line and a `model:"<synthetic>"` "No response requested." assistant reply. The UI hides these; `session::is_synthetic_entry` detects them and they're dropped from both `message_count` (`session.rs`) and the `--show` transcript (`collect_messages` in `output.rs`) so output matches the UI. Keep both call sites using that one predicate.
 
 Parsing runs in parallel across files via `rayon` (`par_iter` in `main.rs`); keep `parse_session` free of shared mutable state.
 

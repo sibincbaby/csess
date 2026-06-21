@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-06-21
+
+### Added
+- `--show --before <uuid>` pages a transcript backwards: it returns only the
+  messages older than the given message uuid, then `-n` keeps the last N of
+  those. A uuid cursor (not an offset) for scroll-up / lazy-load chat UIs —
+  immune to index drift when the active session appends new turns.
+
+### Changed
+- `--show` and `message_count` now skip the synthetic resume entries Claude Code
+  writes to its own log (the `isMeta` "Continue from where you left off." and the
+  `model: "<synthetic>"` "No response requested." pairs). Transcripts and counts
+  now match what the Claude Code UI displays instead of over-reporting.
+
 ## [0.2.1] - 2026-06-21
 
 ### Added

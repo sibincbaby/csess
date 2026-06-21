@@ -34,6 +34,10 @@ pub struct Cli {
     #[arg(long, value_name = "ID_OR_NAME")]
     pub show: Option<String>,
 
+    /// With --show: only messages older than this message uuid (scroll-up cursor)
+    #[arg(long, value_name = "UUID", requires = "show")]
+    pub before: Option<String>,
+
     /// Lower time bound: 2026-06-01 | 7d | 24h | 30m
     #[arg(long)]
     pub since: Option<String>,

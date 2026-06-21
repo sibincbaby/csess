@@ -14,6 +14,7 @@ subprojects, and (2) **show** one session's full conversation transcript.
 - "Which session was most recently active?" → `csess --json -n 1`
 - "Show / open / read the full conversation for session <id>" → `csess -g --show <id> --json`
 - "Give me the last 20 messages of that session" → `csess -g --show <id> -n 20 --json`
+- "Load older messages as the user scrolls up" → page with `--before <uuid>` (see Paging)
 
 ## Listing
 Always prefer `--json` when you will parse the result.
@@ -44,7 +45,13 @@ more than one session it lists the candidates and exits non-zero — narrow it.
 csess -g --show 09f8a9f7              # human-readable transcript
 csess -g --show 09f8a9f7 --json      # structured, for an agent/UI
 csess -g --show 09f8a9f7 -n 20 --json  # only the last 20 messages (tail)
+csess -g --show 09f8a9f7 --before <uuid> -n 20 --json  # 20 messages older than <uuid>
 ```
+
+Synthetic resume entries that Claude Code writes to its own log (the `isMeta`
+"Continue from where you left off." / `<synthetic>` "No response requested."
+pairs) are filtered out, so the transcript and `message_count` match what the
+Claude UI shows — don't expect them in the output.
 
 - **Human** (no `--json`): a header, then each message as `## role · timestamp`
   with content flattened; tool activity shown as `[tool_use: NAME] {input}`,
@@ -68,6 +75,20 @@ csess -g --show 09f8a9f7 -n 20 --json  # only the last 20 messages (tail)
   `{type:"thinking",thinking}`, `{type:"tool_use",id,name,input}`,
   `{type:"tool_result",tool_use_id,content,is_error}`. Pair a result to its call
   via `tool_use_id` ↔ `tool_use.id`. `-n N` keeps the last N messages.
+
+## Paging (scroll-up / lazy load)
+For a chat UI that loads history on scroll, page backwards with a uuid cursor —
+not an offset (offsets drift when the active session appends new turns):
+
+```bash
+csess -g --show <id> -n 50 --json                  # initial: newest 50; keep oldest uuid
+csess -g --show <id> --before <oldest-uuid> -n 50 --json  # scroll up: next 50 older; prepend
+# stop when fewer than 50 come back (reached the top)
+```
+
+`--before <uuid>` drops that message and everything after it, then `-n` keeps the
+last N of what remains. The `uuid` of each message is the stable cursor. `--before`
+requires `--show`.
 
 ## Install
 1. Binary: `cargo install --git https://github.com/sibincbaby/csess`

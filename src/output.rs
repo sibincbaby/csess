@@ -69,8 +69,13 @@ struct Transcript<'a> {
 }
 
 /// Walk the .jsonl and pull out user/assistant messages with their timestamps.
-/// `limit` keeps only the last N messages (the tail) when set.
-fn collect_messages(path: &str, limit: Option<usize>) -> Result<Vec<Message>> {
+/// `before` (a message uuid) drops it and everything after — a scroll-up cursor;
+/// `limit` then keeps only the last N of what remains (the tail).
+fn collect_messages(
+    path: &str,
+    limit: Option<usize>,
+    before: Option<&str>,
+) -> Result<Vec<Message>> {
     let file = fs::File::open(path).with_context(|| format!("opening {path}"))?;
     let mut msgs = Vec::new();
     for line in BufReader::new(file).lines() {
@@ -91,6 +96,9 @@ fn collect_messages(path: &str, limit: Option<usize>) -> Result<Vec<Message>> {
             Some("assistant") => "assistant",
             _ => continue,
         };
+        if crate::session::is_synthetic_entry(&v) {
+            continue;
+        }
         let content = match v.get("message").and_then(|m| m.get("content")) {
             Some(c) => c.clone(),
             None => continue,
@@ -116,6 +124,11 @@ fn collect_messages(path: &str, limit: Option<usize>) -> Result<Vec<Message>> {
             content,
         });
     }
+    if let Some(cur) = before {
+        if let Some(i) = msgs.iter().position(|m| m.uuid.as_deref() == Some(cur)) {
+            msgs.truncate(i);
+        }
+    }
     if let Some(n) = limit {
         let start = msgs.len().saturating_sub(n);
         msgs.drain(..start);
@@ -124,7 +137,11 @@ fn collect_messages(path: &str, limit: Option<usize>) -> Result<Vec<Message>> {
 }
 
 /// Full conversation transcript for a single session, header followed by each message.
-pub fn render_transcript(s: &Session, limit: Option<usize>) -> Result<String> {
+pub fn render_transcript(
+    s: &Session,
+    limit: Option<usize>,
+    before: Option<&str>,
+) -> Result<String> {
     let mut out = format!("# {}\n", s.name.replace('\n', " "));
     out.push_str(&format!("id: {}\n", s.session_id));
     out.push_str(&format!("cwd: {}\n", s.cwd));
@@ -133,7 +150,7 @@ pub fn render_transcript(s: &Session, limit: Option<usize>) -> Result<String> {
     }
     out.push_str(&format!("messages: {}\n", s.message_count));
 
-    for m in collect_messages(&s.file_path, limit)? {
+    for m in collect_messages(&s.file_path, limit, before)? {
         let text = match flatten_content(&m.content) {
             Some(t) if !t.trim().is_empty() => t,
             _ => continue,
@@ -152,7 +169,11 @@ pub fn render_transcript(s: &Session, limit: Option<usize>) -> Result<String> {
 }
 
 /// Structured JSON for a single session's transcript (session metadata + messages).
-pub fn render_transcript_json(s: &Session, limit: Option<usize>) -> Result<String> {
+pub fn render_transcript_json(
+    s: &Session,
+    limit: Option<usize>,
+    before: Option<&str>,
+) -> Result<String> {
     let t = Transcript {
         session_id: &s.session_id,
         name: &s.name,
@@ -161,7 +182,7 @@ pub fn render_transcript_json(s: &Session, limit: Option<usize>) -> Result<Strin
         git_branch: &s.git_branch,
         version: &s.version,
         message_count: s.message_count,
-        messages: collect_messages(&s.file_path, limit)?,
+        messages: collect_messages(&s.file_path, limit, before)?,
     };
     Ok(serde_json::to_string_pretty(&t)?)
 }

@@ -96,7 +96,7 @@ fn run(cli: Cli) -> Result<()> {
 
     // show a single session's transcript (--limit/-n tails the last N messages)
     if let Some(query) = &cli.show {
-        return show_session(&sessions, query, cli.json, cli.limit);
+        return show_session(&sessions, query, cli.json, cli.limit, cli.before.as_deref());
     }
 
     // 5. time filtering (period first, explicit since/until override)
@@ -152,6 +152,7 @@ fn show_session(
     query: &str,
     json: bool,
     limit: Option<usize>,
+    before: Option<&str>,
 ) -> Result<()> {
     let q = query.to_lowercase();
     let matches: Vec<&session::Session> = sessions
@@ -170,9 +171,9 @@ fn show_session(
         }
         [s] => {
             if json {
-                println!("{}", output::render_transcript_json(s, limit)?);
+                println!("{}", output::render_transcript_json(s, limit, before)?);
             } else {
-                println!("{}", output::render_transcript(s, limit)?);
+                println!("{}", output::render_transcript(s, limit, before)?);
             }
             Ok(())
         }

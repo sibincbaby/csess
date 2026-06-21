@@ -59,6 +59,10 @@ pub fn parse_session(path: &Path) -> Result<Option<Session>> {
         };
         let typ = v.get("type").and_then(|t| t.as_str()).unwrap_or("");
 
+        if is_synthetic_entry(&v) {
+            continue;
+        }
+
         if cwd.is_empty() {
             if let Some(c) = v.get("cwd").and_then(|c| c.as_str()) {
                 cwd = c.to_string();
@@ -174,6 +178,18 @@ fn extract_user_text(v: &serde_json::Value) -> Option<String> {
     None
 }
 
+/// Synthetic resume placeholders Claude Code writes to the `.jsonl` itself on
+/// non-interactive resume (`isMeta:true` "Continue from where you left off." and
+/// the `model:"<synthetic>"` "No response requested." reply). The Claude UI hides
+/// these; csess matches that and drops them from transcripts and counts.
+pub(crate) fn is_synthetic_entry(v: &serde_json::Value) -> bool {
+    v.get("isMeta").and_then(|b| b.as_bool()).unwrap_or(false)
+        || v.get("message")
+            .and_then(|m| m.get("model"))
+            .and_then(|m| m.as_str())
+            == Some("<synthetic>")
+}
+
 /// Heuristic: skip command/attachment/system meta messages when naming a session.
 fn is_meta_text(t: &str) -> bool {
     t.starts_with("<command-")
@@ -208,6 +224,28 @@ mod tests {
         assert_eq!(s.git_branch, "main");
         assert_eq!(s.message_count, 2);
         assert_eq!(s.short, "11111111");
+    }
+
+    #[test]
+    fn parse_session_skips_synthetic_resume_entries() {
+        let dir = tempfile::tempdir().unwrap();
+        let p = dir
+            .path()
+            .join("dddddddd-0000-0000-0000-000000000000.jsonl");
+        fs::write(
+            &p,
+            concat!(
+                "{\"type\":\"user\",\"cwd\":\"/x\",\"message\":{\"role\":\"user\",\"content\":\"real prompt\"}}\n",
+                "{\"type\":\"assistant\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"reply\"}]}}\n",
+                "{\"type\":\"user\",\"isMeta\":true,\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"Continue from where you left off.\"}]}}\n",
+                "{\"type\":\"assistant\",\"message\":{\"role\":\"assistant\",\"model\":\"<synthetic>\",\"content\":[{\"type\":\"text\",\"text\":\"No response requested.\"}]}}\n",
+            ),
+        )
+        .unwrap();
+        let s = parse_session(&p).unwrap().unwrap();
+        assert_eq!(s.name, "real prompt");
+        // only the two genuine messages are counted, synthetic pair dropped
+        assert_eq!(s.message_count, 2);
     }
 
     #[test]

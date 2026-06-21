@@ -155,6 +155,50 @@ fn show_limit_returns_last_n_messages() {
 }
 
 #[test]
+fn show_before_returns_messages_older_than_cursor() {
+    let root = tempfile::tempdir().unwrap();
+    let proj = root.path().join("-home-sibin-my-works-demo");
+    fs::create_dir_all(&proj).unwrap();
+    let mut lines = String::new();
+    for i in 0..5 {
+        lines.push_str(&format!(
+            "{{\"type\":\"user\",\"uuid\":\"u{i}\",\"cwd\":\"/home/sibin/my-works/demo\",\"timestamp\":\"2026-06-16T01:0{i}:00.000Z\",\"message\":{{\"role\":\"user\",\"content\":\"msg{i}\"}}}}\n"
+        ));
+    }
+    fs::write(
+        proj.join("11111111-aaaa-bbbb-cccc-dddddddddddd.jsonl"),
+        lines,
+    )
+    .unwrap();
+
+    // cursor at msg3 → only the strictly-older msg0..=msg2 remain; -n 2 keeps the last two of those
+    let out = Command::cargo_bin("csess")
+        .unwrap()
+        .args([
+            "/home/sibin/my-works/demo",
+            "--show",
+            "11111111",
+            "--before",
+            "u3",
+            "--json",
+            "-n",
+            "2",
+            "--projects-dir",
+            root.path().to_str().unwrap(),
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let v: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    let msgs = v["messages"].as_array().unwrap();
+    assert_eq!(msgs.len(), 2);
+    assert_eq!(msgs[0]["content"], "msg1");
+    assert_eq!(msgs[1]["content"], "msg2");
+}
+
+#[test]
 fn show_no_match_exits_2() {
     let root = setup();
     Command::cargo_bin("csess")
