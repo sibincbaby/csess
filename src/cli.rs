@@ -23,6 +23,10 @@ pub struct Cli {
     #[arg(short = 's', long)]
     pub search: Option<String>,
 
+    /// Print the full transcript of one session (by id, short id, or name)
+    #[arg(long, value_name = "ID_OR_NAME")]
+    pub show: Option<String>,
+
     /// Lower time bound: 2026-06-01 | 7d | 24h | 30m
     #[arg(long)]
     pub since: Option<String>,

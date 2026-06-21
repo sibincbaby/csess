@@ -94,6 +94,11 @@ fn run(cli: Cli) -> Result<()> {
         })
         .collect();
 
+    // show a single session's transcript (--limit/-n tails the last N messages)
+    if let Some(query) = &cli.show {
+        return show_session(&sessions, query, cli.json, cli.limit);
+    }
+
     // 5. time filtering (period first, explicit since/until override)
     let (mut since, mut until) = (None, None);
     if let Some(p) = &cli.period {
@@ -139,4 +144,47 @@ fn run(cli: Cli) -> Result<()> {
         println!("{}", output::render_table(&sessions, now));
     }
     Ok(())
+}
+
+/// Find one session by id / short id / name and print its transcript (or raw jsonl for --json).
+fn show_session(
+    sessions: &[session::Session],
+    query: &str,
+    json: bool,
+    limit: Option<usize>,
+) -> Result<()> {
+    let q = query.to_lowercase();
+    let matches: Vec<&session::Session> = sessions
+        .iter()
+        .filter(|s| {
+            s.session_id == query
+                || s.session_id.starts_with(query)
+                || s.short == query
+                || s.name.to_lowercase().contains(&q)
+        })
+        .collect();
+    match matches.as_slice() {
+        [] => {
+            eprintln!("error: no session matching '{query}' in scope (try -g for all projects)");
+            std::process::exit(2);
+        }
+        [s] => {
+            if json {
+                println!("{}", output::render_transcript_json(s, limit)?);
+            } else {
+                println!("{}", output::render_transcript(s, limit)?);
+            }
+            Ok(())
+        }
+        many => {
+            eprintln!(
+                "error: '{query}' matches {} sessions; narrow it down:",
+                many.len()
+            );
+            for s in many {
+                eprintln!("  {}  {}", s.short, s.name.replace('\n', " "));
+            }
+            std::process::exit(2);
+        }
+    }
 }

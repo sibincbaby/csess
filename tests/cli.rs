@@ -71,6 +71,106 @@ fn json_output_is_valid() {
 }
 
 #[test]
+fn show_prints_transcript() {
+    let root = setup();
+    Command::cargo_bin("csess")
+        .unwrap()
+        .args([
+            "/home/sibin/my-works/demo",
+            "--show",
+            "11111111",
+            "--projects-dir",
+            root.path().to_str().unwrap(),
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("## user"))
+        .stdout(predicate::str::contains("Build the thing"));
+}
+
+#[test]
+fn show_json_has_messages_with_timestamps() {
+    let root = setup();
+    let out = Command::cargo_bin("csess")
+        .unwrap()
+        .args([
+            "/home/sibin/my-works/demo",
+            "--show",
+            "11111111",
+            "--json",
+            "--projects-dir",
+            root.path().to_str().unwrap(),
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let v: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    assert_eq!(v["session_id"], "11111111-aaaa-bbbb-cccc-dddddddddddd");
+    assert_eq!(v["messages"][0]["role"], "user");
+    assert_eq!(v["messages"][0]["content"], "Build the thing");
+    assert_eq!(v["messages"][0]["timestamp"], "2026-06-16T01:00:00Z");
+}
+
+#[test]
+fn show_limit_returns_last_n_messages() {
+    let root = tempfile::tempdir().unwrap();
+    let proj = root.path().join("-home-sibin-my-works-demo");
+    fs::create_dir_all(&proj).unwrap();
+    let mut lines = String::new();
+    for i in 0..5 {
+        lines.push_str(&format!(
+            "{{\"type\":\"user\",\"cwd\":\"/home/sibin/my-works/demo\",\"timestamp\":\"2026-06-16T01:0{i}:00.000Z\",\"message\":{{\"role\":\"user\",\"content\":\"msg{i}\"}}}}\n"
+        ));
+    }
+    fs::write(
+        proj.join("11111111-aaaa-bbbb-cccc-dddddddddddd.jsonl"),
+        lines,
+    )
+    .unwrap();
+
+    let out = Command::cargo_bin("csess")
+        .unwrap()
+        .args([
+            "/home/sibin/my-works/demo",
+            "--show",
+            "11111111",
+            "--json",
+            "-n",
+            "2",
+            "--projects-dir",
+            root.path().to_str().unwrap(),
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let v: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    let msgs = v["messages"].as_array().unwrap();
+    assert_eq!(msgs.len(), 2);
+    assert_eq!(msgs[0]["content"], "msg3");
+    assert_eq!(msgs[1]["content"], "msg4");
+}
+
+#[test]
+fn show_no_match_exits_2() {
+    let root = setup();
+    Command::cargo_bin("csess")
+        .unwrap()
+        .args([
+            "/home/sibin/my-works/demo",
+            "--show",
+            "nope-no-such",
+            "--projects-dir",
+            root.path().to_str().unwrap(),
+        ])
+        .assert()
+        .code(2);
+}
+
+#[test]
 fn missing_projects_dir_exits_2() {
     Command::cargo_bin("csess")
         .unwrap()
