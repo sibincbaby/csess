@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-06-21
+
+### Added
+- `csess --version` now reports the Claude Code version this release was tested
+  against (e.g. `0.2.1 (verified with Claude Code 2.1.185)`), so `.jsonl` format
+  drift in a future Claude Code release can be traced to a known-good baseline.
+
 ## [0.2.0] - 2026-06-21
 
 ### Added

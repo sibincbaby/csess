@@ -1,6 +1,6 @@
 [package]
 name = "csess"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "Fast lister for Claude Code sessions in a folder and its subprojects"
 repository = "https://github.com/sibincbaby/csess"

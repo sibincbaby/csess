@@ -42,6 +42,7 @@ cargo install --path . --force
 Releases are built by `.github/workflows/release.yml`, triggered **only by pushing a `v*` tag** (musl + gnu binaries attached to a GitHub Release). There is no other release path — building locally does not publish anything. To cut one:
 
 1. Bump `version` in `Cargo.toml` (semver) and add a matching `## [x.y.z] - YYYY-MM-DD` section to `CHANGELOG.md`.
+   Also update the "verified with Claude Code X.Y.Z" literal in `src/cli.rs` (the `concat!` in `#[command(version = ...)]`) to the `version` field seen in recent session `.jsonl` files — this is what `csess --version` reports, so format drift in a future Claude Code release can be traced to the version it was last tested against.
 2. Commit (`git commit -am "release: vX.Y.Z"`), ensure `main` is up to date, push.
 3. Tag and push the tag — this is what triggers the build:
    ```bash

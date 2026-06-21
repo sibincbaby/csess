@@ -1,10 +1,17 @@
 use crate::filter::SortKey;
 use clap::Parser;
 
+// `--version` reports the Claude Code version this release was tested against.
+// Bump the literal below each release to the `version` field seen in recent
+// session .jsonl files — lets us pin format drift if a future Claude Code
+// release breaks parsing.
 #[derive(Parser, Debug)]
 #[command(
     name = "csess",
-    version,
+    version = concat!(
+        env!("CARGO_PKG_VERSION"),
+        " (verified with Claude Code 2.1.185)"
+    ),
     about = "List Claude Code sessions for a folder and its subprojects"
 )]
 pub struct Cli {
