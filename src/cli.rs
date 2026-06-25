@@ -10,7 +10,7 @@ use clap::Parser;
     name = "csess",
     version = concat!(
         env!("CARGO_PKG_VERSION"),
-        " (verified with Claude Code 2.1.185)"
+        " (verified with Claude Code 2.1.191)"
     ),
     about = "List Claude Code sessions for a folder and its subprojects"
 )]

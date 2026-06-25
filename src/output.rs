@@ -8,9 +8,23 @@ use serde_json::Value;
 use std::fs;
 use std::io::{BufRead, BufReader};
 
-/// Pretty JSON array of full session objects (always valid, even when empty).
+/// Version of the --json contract. Bump on any breaking change to JSON shape
+/// (field rename/removal/retype). Additive fields don't require a bump.
+pub const SCHEMA_VERSION: u32 = 1;
+
+/// The list `--json` payload: a version tag wrapping the session array.
+#[derive(Serialize)]
+struct SessionList<'a> {
+    schema_version: u32,
+    sessions: &'a [Session],
+}
+
+/// Pretty JSON of the session list, tagged with `schema_version` (always valid, even when empty).
 pub fn render_json(sessions: &[Session]) -> Result<String> {
-    Ok(serde_json::to_string_pretty(sessions)?)
+    Ok(serde_json::to_string_pretty(&SessionList {
+        schema_version: SCHEMA_VERSION,
+        sessions,
+    })?)
 }
 
 /// Human-readable aligned table with a trailing count.
@@ -58,6 +72,7 @@ pub struct Message {
 /// Full session object plus its messages, for `--show --json`.
 #[derive(Serialize)]
 struct Transcript<'a> {
+    schema_version: u32,
     session_id: &'a str,
     name: &'a str,
     cwd: &'a str,
@@ -175,6 +190,7 @@ pub fn render_transcript_json(
     before: Option<&str>,
 ) -> Result<String> {
     let t = Transcript {
+        schema_version: SCHEMA_VERSION,
         session_id: &s.session_id,
         name: &s.name,
         cwd: &s.cwd,
@@ -316,7 +332,8 @@ mod tests {
     fn json_contains_name() {
         let out = render_json(&[sample()]).unwrap();
         let v: serde_json::Value = serde_json::from_str(&out).unwrap();
-        assert_eq!(v[0]["name"], "Build the thing");
+        assert_eq!(v["schema_version"], 1);
+        assert_eq!(v["sessions"][0]["name"], "Build the thing");
     }
 
     #[test]

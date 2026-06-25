@@ -65,9 +65,9 @@ fn json_output_is_valid() {
         .stdout
         .clone();
     let v: serde_json::Value = serde_json::from_slice(&out).unwrap();
-    assert!(v.is_array());
-    assert_eq!(v[0]["name"], "Build the thing");
-    assert_eq!(v.as_array().unwrap().len(), 1);
+    assert_eq!(v["schema_version"], 1);
+    assert_eq!(v["sessions"][0]["name"], "Build the thing");
+    assert_eq!(v["sessions"].as_array().unwrap().len(), 1);
 }
 
 #[test]
@@ -107,6 +107,7 @@ fn show_json_has_messages_with_timestamps() {
         .stdout
         .clone();
     let v: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    assert_eq!(v["schema_version"], 1);
     assert_eq!(v["session_id"], "11111111-aaaa-bbbb-cccc-dddddddddddd");
     assert_eq!(v["messages"][0]["role"], "user");
     assert_eq!(v["messages"][0]["content"], "Build the thing");

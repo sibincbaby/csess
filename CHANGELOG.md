@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-06-25
+
+### Added
+- `schema_version` field on all `--json` output (currently `1`). Downstream
+  tools can pin to it; field renames/removals/retypes bump it, additive fields
+  don't.
+
+### Changed
+- **Breaking:** the list `--json` output is now an object
+  `{ "schema_version": 1, "sessions": [...] }` instead of a bare array. Consumers
+  that parsed the top-level array must read the `sessions` key. The `--show
+  --json` transcript is unchanged apart from gaining `schema_version` (additive).
+
 ## [0.3.0] - 2026-06-21
 
 ### Added
