@@ -83,13 +83,27 @@ struct Transcript<'a> {
     messages: Vec<Message>,
 }
 
+/// Filter applied to a session's messages: by `role` and/or a case-insensitive
+/// substring `grep` over the flattened (human-readable) message text.
+#[derive(Clone, Copy, Default)]
+pub struct MsgFilter<'a> {
+    pub role: Option<&'a str>,
+    pub grep: Option<&'a str>,
+}
+
+/// Collect a session's matching messages with no paging — for cross-session `--grep`.
+pub fn collect_filtered(path: &str, filter: MsgFilter) -> Result<Vec<Message>> {
+    collect_messages(path, None, None, filter)
+}
+
 /// Walk the .jsonl and pull out user/assistant messages with their timestamps.
-/// `before` (a message uuid) drops it and everything after — a scroll-up cursor;
-/// `limit` then keeps only the last N of what remains (the tail).
+/// `filter` (role/grep) is applied first, then `before` (a message uuid) drops it
+/// and everything after — a scroll-up cursor; `limit` keeps only the last N (the tail).
 fn collect_messages(
     path: &str,
     limit: Option<usize>,
     before: Option<&str>,
+    filter: MsgFilter,
 ) -> Result<Vec<Message>> {
     let file = fs::File::open(path).with_context(|| format!("opening {path}"))?;
     let mut msgs = Vec::new();
@@ -139,6 +153,15 @@ fn collect_messages(
             content,
         });
     }
+    if let Some(r) = filter.role {
+        msgs.retain(|m| m.role == r);
+    }
+    if let Some(pat) = filter.grep {
+        let pat = pat.to_lowercase();
+        msgs.retain(|m| {
+            flatten_content(&m.content).is_some_and(|t| t.to_lowercase().contains(&pat))
+        });
+    }
     if let Some(cur) = before {
         if let Some(i) = msgs.iter().position(|m| m.uuid.as_deref() == Some(cur)) {
             msgs.truncate(i);
@@ -156,6 +179,7 @@ pub fn render_transcript(
     s: &Session,
     limit: Option<usize>,
     before: Option<&str>,
+    filter: MsgFilter,
 ) -> Result<String> {
     let mut out = format!("# {}\n", s.name.replace('\n', " "));
     out.push_str(&format!("id: {}\n", s.session_id));
@@ -165,7 +189,7 @@ pub fn render_transcript(
     }
     out.push_str(&format!("messages: {}\n", s.message_count));
 
-    for m in collect_messages(&s.file_path, limit, before)? {
+    for m in collect_messages(&s.file_path, limit, before, filter)? {
         let text = match flatten_content(&m.content) {
             Some(t) if !t.trim().is_empty() => t,
             _ => continue,
@@ -188,6 +212,7 @@ pub fn render_transcript_json(
     s: &Session,
     limit: Option<usize>,
     before: Option<&str>,
+    filter: MsgFilter,
 ) -> Result<String> {
     let t = Transcript {
         schema_version: SCHEMA_VERSION,
@@ -198,9 +223,71 @@ pub fn render_transcript_json(
         git_branch: &s.git_branch,
         version: &s.version,
         message_count: s.message_count,
-        messages: collect_messages(&s.file_path, limit, before)?,
+        messages: collect_messages(&s.file_path, limit, before, filter)?,
     };
     Ok(serde_json::to_string_pretty(&t)?)
+}
+
+/// A session plus its matching messages, for cross-session `--grep`.
+pub struct SessionHits<'a> {
+    pub session: &'a Session,
+    pub messages: Vec<Message>,
+}
+
+/// Cross-session grep, human view: one block per session, each match a one-line snippet.
+pub fn render_grep(hits: &[SessionHits], now: DateTime<Utc>) -> String {
+    let mut out = String::new();
+    let total: usize = hits.iter().map(|h| h.messages.len()).sum();
+    for h in hits {
+        out.push_str(&format!(
+            "{}  {}  ({}, {})\n",
+            h.session.short,
+            truncate(&h.session.name.replace('\n', " "), 50),
+            relative_time(h.session.last_active, now),
+            h.messages.len(),
+        ));
+        for m in &h.messages {
+            let snippet = flatten_content(&m.content)
+                .map(|t| truncate(&t.replace('\n', " "), 120))
+                .unwrap_or_default();
+            out.push_str(&format!("  [{}] {}\n", m.role, snippet));
+        }
+    }
+    out.push_str(&format!("{total} matches in {} sessions", hits.len()));
+    out
+}
+
+/// Cross-session grep, JSON view.
+#[derive(Serialize)]
+struct GrepSession<'a> {
+    session_id: &'a str,
+    short: &'a str,
+    name: &'a str,
+    cwd: &'a str,
+    messages: &'a [Message],
+}
+
+#[derive(Serialize)]
+struct GrepResult<'a> {
+    schema_version: u32,
+    matches: Vec<GrepSession<'a>>,
+}
+
+pub fn render_grep_json(hits: &[SessionHits]) -> Result<String> {
+    let matches = hits
+        .iter()
+        .map(|h| GrepSession {
+            session_id: &h.session.session_id,
+            short: &h.session.short,
+            name: &h.session.name,
+            cwd: &h.session.cwd,
+            messages: &h.messages,
+        })
+        .collect();
+    Ok(serde_json::to_string_pretty(&GrepResult {
+        schema_version: SCHEMA_VERSION,
+        matches,
+    })?)
 }
 
 /// Flatten content into readable text; tool calls/results/thinking become bracketed markers.

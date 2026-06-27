@@ -94,9 +94,21 @@ fn run(cli: Cli) -> Result<()> {
         })
         .collect();
 
+    let filter = output::MsgFilter {
+        role: cli.role.map(|r| r.as_str()),
+        grep: cli.grep.as_deref(),
+    };
+
     // show a single session's transcript (--limit/-n tails the last N messages)
     if let Some(query) = &cli.show {
-        return show_session(&sessions, query, cli.json, cli.limit, cli.before.as_deref());
+        return show_session(
+            &sessions,
+            query,
+            cli.json,
+            cli.limit,
+            cli.before.as_deref(),
+            filter,
+        );
     }
 
     // 5. time filtering (period first, explicit since/until override)
@@ -137,6 +149,27 @@ fn run(cli: Cli) -> Result<()> {
         sessions.truncate(n);
     }
 
+    // 8b. cross-session message search (--grep without --show)
+    if cli.grep.is_some() {
+        let mut hits: Vec<output::SessionHits> = sessions
+            .par_iter()
+            .filter_map(|s| match output::collect_filtered(&s.file_path, filter) {
+                Ok(m) if !m.is_empty() => Some(output::SessionHits {
+                    session: s,
+                    messages: m,
+                }),
+                _ => None,
+            })
+            .collect();
+        hits.sort_by_key(|h| std::cmp::Reverse(h.session.last_active));
+        if cli.json {
+            println!("{}", output::render_grep_json(&hits)?);
+        } else {
+            println!("{}", output::render_grep(&hits, now));
+        }
+        return Ok(());
+    }
+
     // 9. output
     if cli.json {
         println!("{}", output::render_json(&sessions)?);
@@ -153,6 +186,7 @@ fn show_session(
     json: bool,
     limit: Option<usize>,
     before: Option<&str>,
+    filter: output::MsgFilter,
 ) -> Result<()> {
     let q = query.to_lowercase();
     let matches: Vec<&session::Session> = sessions
@@ -171,9 +205,12 @@ fn show_session(
         }
         [s] => {
             if json {
-                println!("{}", output::render_transcript_json(s, limit, before)?);
+                println!(
+                    "{}",
+                    output::render_transcript_json(s, limit, before, filter)?
+                );
             } else {
-                println!("{}", output::render_transcript(s, limit, before)?);
+                println!("{}", output::render_transcript(s, limit, before, filter)?);
             }
             Ok(())
         }

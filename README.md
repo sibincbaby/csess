@@ -59,12 +59,28 @@ csess --json               # machine-readable output (for scripts / AI)
 | `--period` | `today` \| `yesterday` \| `week` \| `month` |
 | `--sort` | `active` \| `created` \| `name` \| `messages` \| `size` |
 | `-r, --reverse` | Reverse order |
-| `-n, --limit N` | Cap results |
+| `-n, --limit N` | Cap results (with `--show`, tails the last N messages) |
+| `--show ID_OR_NAME` | Print one session's full transcript |
+| `--before UUID` | With `--show`: only messages older than this uuid (scroll-up cursor) |
+| `--role user\|assistant` | Filter to one side (with `--show` or `--grep`) |
+| `--grep TEXT` | Search message text; with `--show` filters that transcript, else scans across sessions |
 | `--json` | JSON output |
 
 ### JSON fields
 `session_id`, `short`, `name`, `cwd`, `last_active` (RFC3339), `created`,
 `message_count`, `git_branch`, `version`, `size_bytes`, `file_path`.
+
+### Transcripts & search
+
+```bash
+csess -g --show 09f8a9f7              # full conversation (human-readable)
+csess -g --show 09f8a9f7 --json       # structured, for an agent/UI
+csess -g --show 09f8a9f7 -n 20        # only the last 20 messages
+csess -g --show 09f8a9f7 --role user  # just your prompts
+csess -g --show 09f8a9f7 --grep error # messages in that session mentioning "error"
+csess -g --grep "panic"               # search every session; prints matches + snippets
+csess -g --grep "panic" --json        # { "schema_version": 1, "matches": [...] }
+```
 
 ## For AI agents (Claude Code)
 

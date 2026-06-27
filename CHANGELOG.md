@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-06-27
+
+### Added
+- `--role user|assistant` filters a transcript to one side. Works with `--show`
+  and with `--grep`.
+- `--grep <text>` searches message text (case-insensitive substring over the
+  flattened, human-readable content — tool calls included, matching what you
+  see). With `--show` it filters that one transcript; without `--show` it scans
+  every in-scope session in parallel and prints each match's session plus its
+  matching messages as one-line snippets. Honours `-g`/`--period`/`--since` and
+  `--json` (output shape `{ "schema_version": 1, "matches": [...] }`).
+
 ## [0.4.0] - 2026-06-25
 
 ### Added

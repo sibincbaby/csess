@@ -200,6 +200,69 @@ fn show_before_returns_messages_older_than_cursor() {
 }
 
 #[test]
+fn role_and_grep_filter_messages() {
+    let root = tempfile::tempdir().unwrap();
+    let proj = root.path().join("-home-sibin-my-works-demo");
+    fs::create_dir_all(&proj).unwrap();
+    let lines = concat!(
+        "{\"type\":\"user\",\"cwd\":\"/home/sibin/my-works/demo\",\"timestamp\":\"2026-06-16T01:00:00.000Z\",\"message\":{\"role\":\"user\",\"content\":\"please fix the parser\"}}\n",
+        "{\"type\":\"assistant\",\"cwd\":\"/home/sibin/my-works/demo\",\"timestamp\":\"2026-06-16T01:01:00.000Z\",\"message\":{\"role\":\"assistant\",\"content\":\"done with the parser\"}}\n",
+    );
+    fs::write(
+        proj.join("11111111-aaaa-bbbb-cccc-dddddddddddd.jsonl"),
+        lines,
+    )
+    .unwrap();
+    let pd = root.path().to_str().unwrap();
+
+    // --role user: only the user message survives
+    let out = Command::cargo_bin("csess")
+        .unwrap()
+        .args([
+            "/home/sibin/my-works/demo",
+            "--show",
+            "11111111",
+            "--role",
+            "user",
+            "--json",
+            "--projects-dir",
+            pd,
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let v: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    let msgs = v["messages"].as_array().unwrap();
+    assert_eq!(msgs.len(), 1);
+    assert_eq!(msgs[0]["role"], "user");
+
+    // cross-session --grep (no --show): session appears with only matching messages
+    let out = Command::cargo_bin("csess")
+        .unwrap()
+        .args([
+            "/home/sibin/my-works/demo",
+            "--grep",
+            "fix",
+            "--json",
+            "--projects-dir",
+            pd,
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let v: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    let matches = v["matches"].as_array().unwrap();
+    assert_eq!(matches.len(), 1);
+    let mm = matches[0]["messages"].as_array().unwrap();
+    assert_eq!(mm.len(), 1);
+    assert_eq!(mm[0]["content"], "please fix the parser");
+}
+
+#[test]
 fn show_no_match_exits_2() {
     let root = setup();
     Command::cargo_bin("csess")

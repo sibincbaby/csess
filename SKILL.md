@@ -14,6 +14,9 @@ subprojects, and (2) **show** one session's full conversation transcript.
 - "Which session was most recently active?" → `csess --json -n 1`
 - "Show / open / read the full conversation for session <id>" → `csess -g --show <id> --json`
 - "Give me the last 20 messages of that session" → `csess -g --show <id> -n 20 --json`
+- "Just the user's prompts / just the assistant's replies" → add `--role user` / `--role assistant`
+- "Find where X was discussed in this session" → `csess -g --show <id> --grep X --json`
+- "Which sessions mention X?" → `csess -g --grep X --json` (searches across sessions)
 - "Load older messages as the user scrolls up" → page with `--before <uuid>` (see Paging)
 
 ## Listing
@@ -75,6 +78,36 @@ Claude UI shows — don't expect them in the output.
   `{type:"thinking",thinking}`, `{type:"tool_use",id,name,input}`,
   `{type:"tool_result",tool_use_id,content,is_error}`. Pair a result to its call
   via `tool_use_id` ↔ `tool_use.id`. `-n N` keeps the last N messages.
+
+## Filtering & searching messages
+`--role user|assistant` keeps only one side. `--grep <text>` is a
+case-insensitive substring match over the *flattened* message text (what the
+human view shows — tool calls included), not the raw JSON. The two compose.
+
+```bash
+csess -g --show <id> --role user --json          # only the user's prompts
+csess -g --show <id> --grep "regex" --json       # only messages in <id> mentioning "regex"
+csess -g --show <id> --grep "fix" --role user    # combine: user messages mentioning "fix"
+```
+
+Without `--show`, `--grep` becomes a **cross-session** search: it scans every
+in-scope session (respects `-g`/`--period`/`--since`/`-n`) and returns the
+matching sessions, each with only its matching messages.
+
+```bash
+csess -g --grep "panic" --json
+```
+```jsonc
+{
+  "schema_version": 1,
+  "matches": [
+    { "session_id", "short", "name", "cwd",
+      "messages": [ /* same message shape as --show, only the matches */ ] }
+  ]
+}
+```
+Human output is one block per session: a header line, then each match as a
+one-line `[role] snippet`, ending with a total count.
 
 ## Paging (scroll-up / lazy load)
 For a chat UI that loads history on scroll, page backwards with a uuid cursor —

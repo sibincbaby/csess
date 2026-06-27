@@ -10,7 +10,7 @@ use clap::Parser;
     name = "csess",
     version = concat!(
         env!("CARGO_PKG_VERSION"),
-        " (verified with Claude Code 2.1.191)"
+        " (verified with Claude Code 2.1.195)"
     ),
     about = "List Claude Code sessions for a folder and its subprojects"
 )]
@@ -37,6 +37,14 @@ pub struct Cli {
     /// With --show: only messages older than this message uuid (scroll-up cursor)
     #[arg(long, value_name = "UUID", requires = "show")]
     pub before: Option<String>,
+
+    /// Only this role's messages (applies to --show and --grep)
+    #[arg(long, value_enum, value_name = "ROLE")]
+    pub role: Option<Role>,
+
+    /// Search message text: with --show filters that transcript, else scans across sessions
+    #[arg(long, value_name = "TEXT")]
+    pub grep: Option<String>,
 
     /// Lower time bound: 2026-06-01 | 7d | 24h | 30m
     #[arg(long)]
@@ -69,4 +77,20 @@ pub struct Cli {
     /// Override projects root (for testing)
     #[arg(long, hide = true)]
     pub projects_dir: Option<String>,
+}
+
+/// Message role, for `--role`.
+#[derive(clap::ValueEnum, Clone, Copy, Debug)]
+pub enum Role {
+    User,
+    Assistant,
+}
+
+impl Role {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Role::User => "user",
+            Role::Assistant => "assistant",
+        }
+    }
 }
